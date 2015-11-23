@@ -33,19 +33,18 @@ public class ExchangeSystemServiceTest {
         exchangeSystemService = new ExchangeSystemServiceImpl();
     }
 
-
     @Test
-    public void shouldFindPerfectMatchingOrderTestWhenbothPricesAreSame() throws OrderExecutionNotFoundException {
+    public void shouldFindPerfectMatchingOrderTestWhenbothStockPricesAreSame() throws OrderExecutionNotFoundException {
         shouldFindPerfectMatchInitialTest();
     }
 
     @Test
-    public void shouldMatchExistingSellPrice102WithTheHighestPriceTest() throws OrderExecutionNotFoundException {
+    public void shouldMatchExistingStockSellPriceWithTheHighestStockPriceTest() throws OrderExecutionNotFoundException {
         shouldFindMatchWithHighhOrderPriceTest();
     }
 
     @Test
-    public void shouldMatchExistingBuyAt102WithTheLowestPriceTest() throws OrderExecutionNotFoundException {
+    public void shouldMatchExistingStockBuyPriceWithTheLowestPriceTest() throws OrderExecutionNotFoundException {
 
         shouldFindMatchWithHighhOrderPriceTest();
 
@@ -57,11 +56,11 @@ public class ExchangeSystemServiceTest {
         testOpenOrders(VOD_L, 1);
 
         //Executed order should be 1
-        assertTrue("Total executed orders  should be more than zero ", exchangeSystemService.getExecutedOrders(VOD_L).size() == 3);
+        assertTrue("Total executed orders  should be 3 ", exchangeSystemService.getExecutedOrders(VOD_L).size() == 3);
 
         //Test Quantity for execution
         List<Order> orderList = exchangeSystemService.getExecutedOrders(VOD_L);
-        assertTrue("Total executed orders  should be more than zero ", orderList.size() == 3);
+        assertTrue("Total executed orders  should be 3", orderList.size() == 3);
         assertEquals(orderList.get(0).getQuantity(), 1000);
         assertEquals(orderList.get(1).getQuantity(), 500);
         assertEquals(orderList.get(2).getQuantity(), -1000);
@@ -94,13 +93,11 @@ public class ExchangeSystemServiceTest {
 
         final Order sellOrder = new Order(VOD_L, new BigDecimal("102"), -500, OrderType.SELL, USER_2);
 
-        //Open interest is the total quantity of all open orders for the given RIC and direction at each price point
+        executeNewOrder(buyOrder1);
 
-        processOrderAndSuppressException(buyOrder1);
+        executeNewOrder(buyOrder2);
 
-        processOrderAndSuppressException(buyOrder2);
-
-        processOrderAndSuppressException(sellOrder);
+        executeNewOrder(sellOrder);
         //Open interest is the total quantity of all open orders for the given RIC and direction at each price point
         testOpenOrders(VOD_L, 3);
 
@@ -109,7 +106,7 @@ public class ExchangeSystemServiceTest {
         testOpenOrders(VOD_L, 2);
 
         //Executed order should be 1
-        assertTrue("Total executed orders  should be more than zero ", exchangeSystemService.getExecutedOrders(VOD_L).size() == 2);
+        assertTrue("Total executed orders  should be 2 ", exchangeSystemService.getExecutedOrders(VOD_L).size() == 2);
 
         //Test Quantity for execution
         List<Order> orderList = exchangeSystemService.getExecutedOrders(VOD_L);
@@ -128,7 +125,7 @@ public class ExchangeSystemServiceTest {
 
         //Open interest is the total quantity of all open orders for the given RIC and direction at each price point
         //Find perfect matching order for USER_1
-        processOrderAndSuppressException(buyOrder);
+        executeNewOrder(buyOrder);
 
         //Open interest is the total quantity of all open orders for the given RIC and direction at each price point
         testOpenOrders(VOD_L, 1);
@@ -145,19 +142,19 @@ public class ExchangeSystemServiceTest {
         //Test Quantity for execution
         List<Order> orderList = exchangeSystemService.getExecutedOrders(VOD_L);
         //Executed order should be 1
-        assertTrue("Total executed orders  should be one at this point ", exchangeSystemService.getExecutedOrders(VOD_L).size() == 1);
+        assertTrue("Total executed orders  should be 1 ", exchangeSystemService.getExecutedOrders(VOD_L).size() == 1);
         assertEquals(orderList.get(0).getQuantity(), 1000);
 
     }
 
     /**
-     * Suppress Exception because orders need to be match and may not be available.
+     *  Execute new order and suppress Exception because order match may not be available at this point in time
      */
-    private void processOrderAndSuppressException(final Order order) {
+    private void executeNewOrder(final Order order) {
         try {
             exchangeSystemService.addToOpenOrder(order);
         } catch (OrderExecutionNotFoundException e) {
-            //Not find here as we dont have any sell order
+            //Nothing to do, we dont have matching order this point in time.
         }
     }
 

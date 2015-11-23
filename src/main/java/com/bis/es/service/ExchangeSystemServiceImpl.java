@@ -39,7 +39,7 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
 
 
     /**
-     * Matches incoming order with the open orders.
+     * Matches new order with the open orders.
      */
     private Order matches(final Order newOrder, final List<Order> orderToProcessList) throws OrderExecutionNotFoundException {
         //Check whether order matches
@@ -76,7 +76,7 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
     }
 
     /**
-     * Adds incoming order to this queue for executing open orders
+     * Adds new order to this queue for executing open orders
      */
     public void addToOpenOrder(final Order newOrder) throws OrderExecutionNotFoundException {
         Queue<Order> orderQueue = openOrders.get(newOrder.getRicCode());
@@ -92,8 +92,8 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
     }
 
     /**
-     * It checks whether incoming order can be processed or no, if as per business rules order can be processed,
-     * it will update OpenOrders and Update execution order.
+     * It checks whether new order can be processed or no, if as per business rules order can be processed,
+     * it will update open orders and Update execution order.
      */
     public void tryToExecuteOrder(final Order newOrder) throws OrderExecutionNotFoundException {
         final Order foundBestOrder = tryToFindBestOrderFit(newOrder);
@@ -117,7 +117,6 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
 
     /**
      * Gets all the open orders, used to provide open interest for a given RIC and direction
-     *
      * @param ricCode
      * @returns open orders
      */
@@ -154,7 +153,7 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
     }
 
     /**
-     * Try to find best order fit for an incoming order.
+     * Try to find best order fit for an new order.
      */
     private Order tryToFindBestOrderFit(final Order newOrder) throws OrderExecutionNotFoundException {
         Queue<Order> orderQueue = openOrders.get(newOrder.getRicCode());
@@ -165,7 +164,7 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
         } else { //Must be SELL
             orderToProcess = orderQueue.stream().filter(o -> o.getOrderType().equals(OrderType.BUY)).collect(Collectors.toList());
         }
-        //Now match incoming order with the open order list
+        //Now match new order with the open order list
         return matches(newOrder, orderToProcess);
     }
 }

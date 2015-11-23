@@ -2,7 +2,7 @@ package com.bis.es.domain;
 
 /**
  * ExchangeOrder
- * Class to keep integrity of executed order buy and sell together.
+ * To keep integrity of executed order buy and sell together.
  */
 public final class ExchangeSystemOrder {
 
@@ -21,9 +21,6 @@ public final class ExchangeSystemOrder {
 
     @Override
     public String toString() {
-        return "ExchangeSystemOrder{" +
-                "fromOrder=" + buyOrder +
-                ", toOrder=" + sellOrder +
-                '}';
+        return new StringBuilder().append("ExchangeSystemOrder{").append("fromOrder=" + buyOrder).append(", toOrder=" + sellOrder).toString();
     }
 }

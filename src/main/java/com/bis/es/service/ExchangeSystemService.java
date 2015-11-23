@@ -12,17 +12,17 @@ import java.util.Queue;
 public interface ExchangeSystemService {
 
     /**
-     * Adds incoming orders to op[en order list
-     * @param incomingOrder
+     * Adds new order to open order list
+     * @param newOrder new incoming order
      */
-    void addToOpenOrder(final Order incomingOrder) throws OrderExecutionNotFoundException;
+    void addToOpenOrder(final Order newOrder) throws OrderExecutionNotFoundException;
 
     /**
-     * Process incoming order whether it can be executes or no
+     * Process new order whether it can be executed or no
      *
-     * @param incomingOrder
+     * @param newOrder new incoming order
      */
-    void tryToExecuteOrder(final Order incomingOrder) throws OrderExecutionNotFoundException;
+    void tryToExecuteOrder(final Order newOrder) throws OrderExecutionNotFoundException;
 
     /**
      * Gets all the open order based on the ric
@@ -36,14 +36,14 @@ public interface ExchangeSystemService {
      * Calculates average execution price for a given ric.
      *
      * @param ricCode
-     * @return average price
+     * @return average price for executed stock for ric
      */
     BigDecimal calculateAverageExchangedPrice(final String ricCode);
 
     /**
      * Returns all the executed orders.
      * @param ricCode
-     * @return
+     * @return all executed orders matching buy/sell
      */
     List<Order> getExecutedOrders(final String ricCode);
 

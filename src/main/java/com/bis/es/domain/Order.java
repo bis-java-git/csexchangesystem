@@ -33,11 +33,6 @@ public final class Order {
      */
     private OrderType orderType;
 
-    /**
-     * Unique ID for the order
-     */
-    private final UUID uniqueId;
-
 
     public Order(final String ricCode,
                  final BigDecimal price,
@@ -49,8 +44,6 @@ public final class Order {
         this.quantity = quantity;
         this.orderType = orderType;
         this.user = user;
-        uniqueId = UUID.randomUUID();
-
     }
 
     public String getRicCode() {
@@ -80,7 +73,6 @@ public final class Order {
         if (orderType != order.orderType) return false;
         if (price != null ? !price.equals(order.price) : order.price != null) return false;
         if (ricCode != null ? !ricCode.equals(order.ricCode) : order.ricCode != null) return false;
-        if (uniqueId != null ? !uniqueId.equals(order.uniqueId) : order.uniqueId != null) return false;
         if (user != null ? !user.equals(order.user) : order.user != null) return false;
 
         return true;
@@ -94,13 +86,19 @@ public final class Order {
         result = 31 * result + quantity;
         result = 31 * result + (user != null ? user.hashCode() : 0);
         result = 31 * result + (orderType != null ? orderType.hashCode() : 0);
-        result = 31 * result + (uniqueId != null ? uniqueId.hashCode() : 0);
         return result;
     }
 
 
     @Override
     public String toString() {
-        return new StringBuilder().append("Order{").append("ricCode='" + ricCode + '\'').append(", price=" + price).append(", quantity=" + quantity).append(", user='" + user + '\'').append(", orderType=" + orderType).append(", uniqueId=" + uniqueId).append("}").toString();
+        return new StringBuilder()
+                .append("Order{")
+                .append("ricCode='" + ricCode + '\'')
+                .append(", price=" + price)
+                .append(", quantity=" + quantity)
+                .append(", user='" + user + '\'')
+                .append(", orderType=" + orderType)
+                .toString();
     }
 }

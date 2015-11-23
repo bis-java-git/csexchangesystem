@@ -41,21 +41,21 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
     /**
      * Matches incoming order with the open orders.
      */
-    private Order matches(final Order incomingOrder, final List<Order> orderToProcessList) throws OrderExecutionNotFoundException {
+    private Order matches(final Order newOrder, final List<Order> orderToProcessList) throws OrderExecutionNotFoundException {
         //Check whether order matches
         //1. Rules apply i.e. if sell ==2000 and buy ==2000
         //2. If there are multiple matching orders at different prices for a new sell order, it matches against the order with the highest price
         //3. If there are multiple matching orders at the best price for a new order, it matches against the earliest matching existing orders
 
         Order bestMatch = null;
-        BigDecimal lastPrice = incomingOrder.getPrice();
+        BigDecimal lastPrice = newOrder.getPrice();
         for (Order orderToMatch : orderToProcessList) {
 
-            if ((orderToMatch.getQuantity() + incomingOrder.getQuantity()) != 0) {
-                throw new OrderExecutionNotFoundException("Quantity for order differnt " + incomingOrder);
+            if ((orderToMatch.getQuantity() + newOrder.getQuantity()) != 0) {
+                throw new OrderExecutionNotFoundException("Quantity for order differnt " + newOrder);
             }
 
-            if (incomingOrder.getOrderType().equals(OrderType.BUY)) {
+            if (newOrder.getOrderType().equals(OrderType.BUY)) {
                 if (orderToMatch.getPrice().compareTo(lastPrice) <= 0) {
                     lastPrice = orderToMatch.getPrice();
                     bestMatch = orderToMatch;
@@ -69,34 +69,34 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
         }
 
         if (bestMatch != null) {
+            logger.debug("Best match found {}", bestMatch);
             return bestMatch;
         }
-        throw new OrderExecutionNotFoundException("Matching order not found " + incomingOrder);
+        throw new OrderExecutionNotFoundException("Matching order not found " + newOrder);
     }
 
     /**
      * Adds incoming order to this queue for executing open orders
      */
-    public void addToOpenOrder(final Order incomingOrder) throws OrderExecutionNotFoundException {
-        Queue<Order> orderQueue = openOrders.get(incomingOrder.getRicCode());
+    public void addToOpenOrder(final Order newOrder) throws OrderExecutionNotFoundException {
+        Queue<Order> orderQueue = openOrders.get(newOrder.getRicCode());
 
         if (orderQueue == null) {
             orderQueue = new ConcurrentLinkedQueue<>();
-            openOrders.put(incomingOrder.getRicCode(), orderQueue);
+            openOrders.put(newOrder.getRicCode(), orderQueue);
         }
-        orderQueue.add(incomingOrder);
-        logger.debug("Added incoimg order to the open order list: "+ incomingOrder);
+        orderQueue.add(newOrder);
+        logger.debug("Added new order to the open order list {} ",newOrder);
         //try to execute order
-        tryToExecuteOrder(incomingOrder);
+        tryToExecuteOrder(newOrder);
     }
-
 
     /**
      * It checks whether incoming order can be processed or no, if as per business rules order can be processed,
      * it will update OpenOrders and Update execution order.
      */
-    public void tryToExecuteOrder(final Order incomingOrder) throws OrderExecutionNotFoundException {
-        final Order foundBestOrder = tryToFindBestOrderFit(incomingOrder);
+    public void tryToExecuteOrder(final Order newOrder) throws OrderExecutionNotFoundException {
+        final Order foundBestOrder = tryToFindBestOrderFit(newOrder);
         if (foundBestOrder != null) {
             Queue executionOrderQueue = exchangeOrders.get(foundBestOrder.getRicCode());
             if (executionOrderQueue == null) {
@@ -104,14 +104,14 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
                 exchangeOrders.put(foundBestOrder.getRicCode(), executionOrderQueue);
             }
             // Add it to the execution order queue
-            executionOrderQueue.add(new ExchangeSystemOrder(foundBestOrder, incomingOrder));
+            executionOrderQueue.add(new ExchangeSystemOrder(foundBestOrder, newOrder));
             //remove it from the open orders queue
             Queue<Order> openOrderQueue = openOrders.get(foundBestOrder.getRicCode());
             openOrderQueue.remove(foundBestOrder);
-            openOrderQueue.remove(incomingOrder);
-            logger.debug("Found best order " + foundBestOrder.toString());
+            openOrderQueue.remove(newOrder);
+            logger.debug("Found best order {} ", foundBestOrder.toString());
         } else {
-            logger.debug("best order match is not found " + incomingOrder);
+            logger.debug("best order match is not found {} ",newOrder);
         }
     }
 
@@ -119,7 +119,7 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
      * Gets all the open orders, used to provide open interest for a given RIC and direction
      *
      * @param ricCode
-     * @return
+     * @returns open orders
      */
     public Queue<Order> getOpenOrders(final String ricCode) {
         return openOrders.get(ricCode);
@@ -133,14 +133,13 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
     public BigDecimal calculateAverageExchangedPrice(final String ricCode) {
         Queue<ExchangeSystemOrder> executionOrderQueue = exchangeOrders.get(ricCode);
 
-        final BigDecimal totalAmount = executionOrderQueue.stream().map((x) -> x.getSellOrder().getPrice().abs(MathContext.DECIMAL128).
+        final BigDecimal totalAmount = executionOrderQueue.stream().map((x) -> x.getSellOrder().getPrice().
                 multiply(new BigDecimal(x.getSellOrder().getQuantity()).abs(MathContext.DECIMAL128))).reduce((x, y) -> x.add(y)).get();
 
         final BigDecimal totalQuantity = executionOrderQueue.stream().map((x) -> new BigDecimal(x.getSellOrder().getQuantity()).abs(MathContext.DECIMAL128)).reduce((x, y) -> x.add(y)).get();
 
         return totalAmount.divide(totalQuantity, MathContext.DECIMAL128).setScale(DECIMAL_PLACES, RoundingMode.HALF_UP);
     }
-
 
     /**
      * Get all th executed orders for a ric
@@ -157,16 +156,16 @@ public class ExchangeSystemServiceImpl implements ExchangeSystemService {
     /**
      * Try to find best order fit for an incoming order.
      */
-    private Order tryToFindBestOrderFit(final Order incomingOrder) throws OrderExecutionNotFoundException {
-        Queue<Order> orderQueue = openOrders.get(incomingOrder.getRicCode());
+    private Order tryToFindBestOrderFit(final Order newOrder) throws OrderExecutionNotFoundException {
+        Queue<Order> orderQueue = openOrders.get(newOrder.getRicCode());
         List<Order> orderToProcess;
-        if (incomingOrder.getOrderType().equals(OrderType.BUY)) {
+        if (newOrder.getOrderType().equals(OrderType.BUY)) {
             //find all SELL orders
             orderToProcess = orderQueue.stream().filter(o -> o.getOrderType().equals(OrderType.SELL)).collect(Collectors.toList());
         } else { //Must be SELL
             orderToProcess = orderQueue.stream().filter(o -> o.getOrderType().equals(OrderType.BUY)).collect(Collectors.toList());
         }
         //Now match incoming order with the open order list
-        return matches(incomingOrder, orderToProcess);
+        return matches(newOrder, orderToProcess);
     }
 }
